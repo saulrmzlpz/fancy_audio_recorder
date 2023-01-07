@@ -4,7 +4,7 @@ Simple audio recorder ready to use (Like instant soup).
 
 ## Demo
 
-![til](./demo.gif)
+![](https://github.com/saulrmzlpz/fancy_audio_recorder/blob/main/demo.gif)
 
 ## Getting started
 
