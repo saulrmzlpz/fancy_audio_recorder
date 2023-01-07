@@ -2,9 +2,9 @@
 
 Simple audio recorder ready to use (Like instant soup).
 
-## Features
+## Demo
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+![til](./demo.gif)
 
 ## Getting started
 
