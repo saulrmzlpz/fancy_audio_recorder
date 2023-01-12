@@ -8,11 +8,10 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  assets_audio_player: ^3.0.6
   flutter:
     sdk: flutter
   record: ^4.4.4
-  eval_ex: ^1.1.7
-  audioplayers: ^1.2.0
 
 dev_dependencies:
   flutter_lints: ^2.0.0

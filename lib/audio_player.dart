@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'dart:developer';
 
-import 'package:audioplayers/audioplayers.dart';
+import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
 
 class AudioSlidePlayer extends StatefulWidget {
@@ -14,25 +15,27 @@ class AudioSlidePlayer extends StatefulWidget {
   State<AudioSlidePlayer> createState() => _AudioSlidePlayerState();
 }
 
-class _AudioSlidePlayerState extends State<AudioSlidePlayer> with SingleTickerProviderStateMixin {
+class _AudioSlidePlayerState extends State<AudioSlidePlayer>
+    with SingleTickerProviderStateMixin {
+  StreamSubscription? _readyToPlaySubscription;
   StreamSubscription? _positionSubscription;
-  StreamSubscription? _playerCompleteSubscription;
+  StreamSubscription? _playlistFinishedSubscription;
+  StreamSubscription? _isPlayingSubscription;
+
   Duration? _duration;
-  Duration? _position;
-  AudioPlayer player = AudioPlayer();
+  Duration _position = Duration.zero;
+  final assetsAudioPlayer = AssetsAudioPlayer();
+  bool _isPlaying = false;
 
   String get _durationText => _duration?.toString().split('.').first ?? '';
-  String get _positionText => _position?.toString().split('.').first ?? '';
+  String get _positionText => _position.toString().split('.').first;
 
   late AnimationController controller;
   late Animation<double> animation;
 
   @override
   void initState() {
-    player.setSourceDeviceFile(widget.path).then((_) async {
-      _duration = await player.getDuration();
-      setState(() {});
-    });
+    assetsAudioPlayer.open(Audio.file(widget.path), autoStart: false);
 
     controller = AnimationController(
       vsync: this,
@@ -52,12 +55,12 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer> with SingleTickerPr
       children: [
         IconButton(
             onPressed: () async {
-              if (player.state == PlayerState.stopped || player.state == PlayerState.completed) {
+              if (!_isPlaying) {
                 controller.forward();
-                player.resume();
+                assetsAudioPlayer.play();
               } else {
                 controller.reverse();
-                player.stop();
+                assetsAudioPlayer.pause();
               }
             },
             icon: AnimatedIcon(
@@ -69,22 +72,21 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer> with SingleTickerPr
             mainAxisSize: MainAxisSize.min,
             children: [
               Slider(
-                value:
-                    (_position != null && _duration != null && _position!.inMilliseconds > 0 && _position!.inMilliseconds < _duration!.inMilliseconds)
-                        ? _position!.inMilliseconds / _duration!.inMilliseconds
-                        : 0.0,
+                value: (_duration != null && _position.inMilliseconds > 0)
+                    ? _position.inMilliseconds / _duration!.inMilliseconds
+                    : 0.0,
                 onChanged: (v) {
-                  final duration = _duration;
-                  if (duration == null) {
-                    return;
-                  }
-                  final position = v * duration.inMilliseconds;
-                  player.seek(Duration(milliseconds: position.round()));
+                  if (_duration == null) return;
+                  final position = v * _duration!.inMilliseconds;
+                  assetsAudioPlayer
+                      .seek(Duration(milliseconds: position.round()));
                 },
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_positionText), Text(_durationText)]),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [Text(_positionText), Text(_durationText)]),
               )
             ],
           ),
@@ -94,23 +96,41 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer> with SingleTickerPr
   }
 
   void _initStreams() {
-    _positionSubscription = player.onPositionChanged.listen(
-      (p) => setState(() => _position = p),
-    );
+    _readyToPlaySubscription = assetsAudioPlayer.onReadyToPlay.listen((audio) {
+      if (audio == null) return;
+      setState(() => _duration = audio.duration);
+    });
 
-    _playerCompleteSubscription = player.onPlayerComplete.listen((event) {
+    _isPlayingSubscription = assetsAudioPlayer.isPlaying.listen((playing) {
+      setState(() => _isPlaying = playing);
+    });
+
+    _positionSubscription =
+        assetsAudioPlayer.currentPosition.listen((position) {
+      setState(() => _position = position);
+      log(position.toString());
+    });
+
+    _playlistFinishedSubscription =
+        assetsAudioPlayer.playlistFinished.listen((finished) {
+      if (!finished) return;
       controller.reverse();
-      setState(() {
-        _position = Duration.zero;
-      });
+      setState(() => _position = Duration.zero);
+    });
+
+    assetsAudioPlayer.playerState.listen((event) {
+      log(event.toString());
     });
   }
 
   @override
   void dispose() {
-    player.dispose();
+    assetsAudioPlayer.dispose();
+    _readyToPlaySubscription?.cancel();
     _positionSubscription?.cancel();
-    _playerCompleteSubscription?.cancel();
+    _playlistFinishedSubscription?.cancel();
+    _isPlayingSubscription?.cancel();
+
     controller.dispose();
     super.dispose();
   }
