@@ -16,7 +16,7 @@ to `/example` folder.
 
 ```dart
  AudioRecorderButton(
-    maxRecordDuration: const Duration(seconds: 80),
+    maxRecordTime: const Duration(seconds: 80),
     onRecordComplete: (value) {
         log('$value');
     },
