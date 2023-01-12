@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:fancy_audio_recorder/audio_player.dart';
@@ -8,8 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
 class AudioRecorderButton extends StatefulWidget {
-  const AudioRecorderButton({super.key, required this.maxRecordDuration, this.onRecordComplete});
-  final Duration maxRecordDuration;
+  const AudioRecorderButton(
+      {super.key, required this.maxRecordTime, this.onRecordComplete});
+  final Duration maxRecordTime;
   final ValueChanged<String?>? onRecordComplete;
 
   @override
@@ -17,20 +17,21 @@ class AudioRecorderButton extends StatefulWidget {
 }
 
 class _AudioRecorderButtonState extends State<AudioRecorderButton> {
+  final record = Record();
   final sampleTime = const Duration(milliseconds: 100);
-  final animTime = const Duration(milliseconds: 200);
-  Record record = Record();
-  double waveHeight = 0;
+  Duration elapsedTime = Duration.zero;
   Timer? timer;
   bool get timerIsActive => timer?.isActive ?? false;
-  Duration elapsedTime = const Duration();
   Uri? path;
+
+  double waveHeight = 0;
   FancyAudioRecorderState state = FancyAudioRecorderState.start;
+  final animTime = const Duration(milliseconds: 200);
 
   @override
   void initState() {
     record.onAmplitudeChanged(sampleTime).listen((amp) {
-      if (mounted) setState(() => waveHeight = 40 * calculatedDB(amp.current));
+      if (mounted) setState(() => waveHeight = calculatedDB(amp.current));
     });
 
     record.onStateChanged().listen((state) {
@@ -42,56 +43,56 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Stack(
-        alignment: state == FancyAudioRecorderState.recorded || state == FancyAudioRecorderState.start ? Alignment.centerRight : Alignment.centerLeft,
-        children: [
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeIn,
-            child: state == FancyAudioRecorderState.recorded
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 60),
-                    child: AudioSlidePlayer(
-                      path: path!.path,
-                    ),
-                  )
-                : const SizedBox(),
-          ),
-          Card(
-            margin: const EdgeInsets.only(left: 20),
-            clipBehavior: Clip.none,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AnimatedSize(
+          duration: animTime,
+          curve: Curves.easeIn,
+          child: Visibility(
+            visible: state == FancyAudioRecorderState.recorded,
             child: AnimatedPadding(
-              duration: const Duration(milliseconds: 200),
-              padding:
-                  state == FancyAudioRecorderState.recording ? const EdgeInsets.fromLTRB(60, 16, 16, 16) : const EdgeInsets.symmetric(vertical: 16),
-              child: Text(timerIsActive ? '${formatDuration(elapsedTime)} - ${formatDuration(widget.maxRecordDuration)}' : ''),
+              duration: animTime,
+              padding: state == FancyAudioRecorderState.recorded
+                  ? const EdgeInsets.only(right: 80)
+                  : EdgeInsets.zero,
+              child: AudioSlidePlayer(
+                path: path?.path ?? '',
+              ),
             ),
           ),
-          Stack(
-            alignment: Alignment.center,
-            fit: StackFit.loose,
+        ),
+        AnimatedAlign(
+          duration: animTime,
+          alignment: state != FancyAudioRecorderState.recorded
+              ? Alignment.center
+              : Alignment.centerRight,
+          child: Stack(
+            alignment: Alignment.centerLeft,
             children: [
-              AnimatedContainer(
-                duration: sampleTime,
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), shape: BoxShape.circle),
-                height: 60 + waveHeight,
-                width: 60 + waveHeight,
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(shape: const CircleBorder(), minimumSize: const Size(0, 60)),
+              Padding(
+                  padding: const EdgeInsets.only(left: 50),
+                  child: AnimatedSize(
+                    duration: animTime,
+                    child: Visibility(
+                      visible: state == FancyAudioRecorderState.recording,
+                      child: TimerText(
+                          elapsedTime: elapsedTime,
+                          maxRecordTime: widget.maxRecordTime,
+                          paddingLeft: 60),
+                    ),
+                  )),
+              WaveButton(
+                sampleTime: sampleTime,
+                waveHeight: waveHeight,
                 onPressed: _toggleRecord,
-                child: Icon(
-                  _switchIconState(),
-                  size: 40,
-                ),
+                state: state,
+                buttonSize: 60,
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -109,23 +110,14 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
     }
   }
 
-  IconData _switchIconState() {
-    switch (state) {
-      case FancyAudioRecorderState.start:
-        return Icons.mic;
-      case FancyAudioRecorderState.recording:
-        return Icons.stop_rounded;
-      case FancyAudioRecorderState.recorded:
-        return Icons.delete;
-    }
-  }
-
   void _startRecord() async {
+    bool permissionDenied = !await record.hasPermission();
+    if (permissionDenied) return;
     state = FancyAudioRecorderState.recording;
     record.start();
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       elapsedTime = Duration(seconds: timer.tick);
-      if (elapsedTime.inSeconds >= widget.maxRecordDuration.inSeconds) {
+      if (elapsedTime.inSeconds >= widget.maxRecordTime.inSeconds) {
         _stopRecord();
       }
     });
@@ -134,7 +126,7 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
   void _stopRecord() async {
     timer?.cancel();
     path = Uri.tryParse(await record.stop() ?? '');
-    elapsedTime = const Duration();
+    elapsedTime = Duration.zero;
     if (path != null) {
       state = FancyAudioRecorderState.recorded;
       if (widget.onRecordComplete != null) widget.onRecordComplete!(path?.path);
@@ -152,7 +144,98 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
     path = null;
     state = FancyAudioRecorderState.start;
     if (widget.onRecordComplete != null) widget.onRecordComplete!(null);
+
     setState(() {});
+  }
+}
+
+class WaveButton extends StatelessWidget {
+  const WaveButton(
+      {Key? key,
+      required this.sampleTime,
+      required this.waveHeight,
+      required this.onPressed,
+      required this.state,
+      required this.buttonSize})
+      : super(key: key);
+
+  final Duration sampleTime;
+  final double waveHeight;
+  final VoidCallback onPressed;
+  final FancyAudioRecorderState state;
+  final double buttonSize;
+  final double waveFactor = 40;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      fit: StackFit.loose,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              shape: BoxShape.circle),
+          child: AnimatedSize(
+            duration: sampleTime,
+            child: SizedBox.fromSize(
+              size: Size.square(buttonSize + (waveHeight * waveFactor)),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.all(buttonSize / 3),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
+                minimumSize: Size.square(buttonSize)),
+            onPressed: onPressed,
+            child: Icon(
+              _switchIconState,
+              size: 40,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData get _switchIconState {
+    switch (state) {
+      case FancyAudioRecorderState.start:
+        return Icons.mic;
+      case FancyAudioRecorderState.recording:
+        return Icons.stop_rounded;
+      case FancyAudioRecorderState.recorded:
+        return Icons.delete;
+    }
+  }
+}
+
+class TimerText extends StatelessWidget {
+  const TimerText({
+    super.key,
+    required this.elapsedTime,
+    required this.maxRecordTime,
+    required this.paddingLeft,
+  });
+
+  final Duration elapsedTime;
+  final Duration maxRecordTime;
+  final double paddingLeft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        margin: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.only(left: paddingLeft * 0.6),
+        child: Text(
+            '${formatDuration(elapsedTime)} - ${formatDuration(maxRecordTime)}'),
+      ),
+    );
   }
 }
 

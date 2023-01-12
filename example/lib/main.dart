@@ -27,7 +27,7 @@ class _MyAppState extends State<MyApp> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AudioRecorderButton(
-                maxRecordDuration: const Duration(seconds: 80),
+                maxRecordTime: const Duration(seconds: 80),
                 onRecordComplete: (value) {
                   log('$value');
                   setState(() {
