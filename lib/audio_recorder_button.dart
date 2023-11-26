@@ -4,13 +4,26 @@ import 'dart:io';
 import 'package:fancy_audio_recorder/audio_player.dart';
 import 'package:fancy_audio_recorder/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:record/record.dart';
 
 class AudioRecorderButton extends StatefulWidget {
   const AudioRecorderButton(
-      {super.key, required this.maxRecordTime, this.onRecordComplete});
+      {super.key,
+      required this.maxRecordTime,
+      this.onRecordComplete,
+      this.primaryColor,
+      this.iconColor,
+      this.recordIcon,
+      this.stopIcon,
+      this.deleteIcon});
   final Duration maxRecordTime;
   final ValueChanged<String?>? onRecordComplete;
+  final Color? primaryColor;
+  final Color? iconColor;
+  final String? recordIcon;
+  final String? stopIcon;
+  final String? deleteIcon;
 
   @override
   State<AudioRecorderButton> createState() => _AudioRecorderButtonState();
@@ -58,6 +71,7 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
                   : EdgeInsets.zero,
               child: AudioSlidePlayer(
                 path: path?.path ?? '',
+                primaryColor: widget.primaryColor,
               ),
             ),
           ),
@@ -88,6 +102,11 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
                 onPressed: _toggleRecord,
                 state: state,
                 buttonSize: 60,
+                buttonColor: widget.primaryColor,
+                iconColor: widget.iconColor,
+                recordIcon: getIconThrowPath(widget.recordIcon ?? ''),
+                stopIcon: getIconThrowPath(widget.stopIcon ?? ''),
+                deleteIcon: getIconThrowPath(widget.deleteIcon ?? ''),
               ),
             ],
           ),
@@ -147,6 +166,35 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
 
     setState(() {});
   }
+
+  Widget? getIconThrowPath(String path) {
+    if (path.isEmpty) return null;
+
+    if ((path.endsWith('.png') ||
+            path.endsWith('.jpg') ||
+            path.endsWith('.jpeg')) &&
+        path.startsWith('http')) {
+      return Image.network(path);
+    } else if (path.startsWith('http') && path.endsWith('.svg')) {
+      return SvgPicture.network(
+        path,
+        width: 40,
+        height: 40,
+      );
+    } else if (path.startsWith('assets') && path.endsWith('.svg')) {
+      return SvgPicture.asset(
+        path,
+        width: 40,
+        height: 40,
+      );
+    } else if (path.startsWith('assets') &&
+        (path.endsWith('.png') ||
+            path.endsWith('.jpg') ||
+            path.endsWith('.jpeg'))) {
+      return Image.asset(path);
+    }
+    return null;
+  }
 }
 
 class WaveButton extends StatelessWidget {
@@ -156,7 +204,12 @@ class WaveButton extends StatelessWidget {
       required this.waveHeight,
       required this.onPressed,
       required this.state,
-      required this.buttonSize})
+      required this.buttonSize,
+      this.buttonColor,
+      this.iconColor,
+      this.recordIcon,
+      this.stopIcon,
+      this.deleteIcon})
       : super(key: key);
 
   final Duration sampleTime;
@@ -165,6 +218,11 @@ class WaveButton extends StatelessWidget {
   final FancyAudioRecorderState state;
   final double buttonSize;
   final double waveFactor = 40;
+  final Color? buttonColor;
+  final Color? iconColor;
+  final Widget? recordIcon;
+  final Widget? stopIcon;
+  final Widget? deleteIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +232,9 @@ class WaveButton extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              color: buttonColor != null
+                  ? buttonColor!.withOpacity(0.5)
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.5),
               shape: BoxShape.circle),
           child: AnimatedSize(
             duration: sampleTime,
@@ -184,30 +244,32 @@ class WaveButton extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: EdgeInsets.all(buttonSize / 3),
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-                minimumSize: Size.square(buttonSize)),
-            onPressed: onPressed,
-            child: Icon(
-              _switchIconState,
-              size: 40,
-            ),
-          ),
-        ),
+            padding: EdgeInsets.all(buttonSize / 3),
+            child: FilledButton.tonal(
+                style: FilledButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.square(buttonSize),
+                  backgroundColor:
+                      buttonColor ?? Theme.of(context).colorScheme.primary,
+                ),
+                onPressed: onPressed,
+                child: AnimatedSwitcher(
+                  duration: sampleTime,
+                  child: _switchIconState,
+                ))),
       ],
     );
   }
 
-  IconData get _switchIconState {
+  Widget get _switchIconState {
     switch (state) {
       case FancyAudioRecorderState.start:
-        return Icons.mic;
+        return recordIcon ?? const Icon(Icons.mic_rounded, size: 40);
       case FancyAudioRecorderState.recording:
-        return Icons.stop_rounded;
+        return stopIcon ?? const Icon(Icons.stop_rounded, size: 40);
       case FancyAudioRecorderState.recorded:
-        return Icons.delete;
+        return deleteIcon ?? const Icon(Icons.delete_rounded, size: 40);
     }
   }
 }

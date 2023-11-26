@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 class AudioSlidePlayer extends StatefulWidget {
   const AudioSlidePlayer({
     Key? key,
+    this.primaryColor,
     required this.path,
   }) : super(key: key);
   final String path;
+  final Color? primaryColor;
 
   @override
   State<AudioSlidePlayer> createState() => _AudioSlidePlayerState();
@@ -51,22 +53,28 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer>
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        IconButton(
-            onPressed: () async {
-              if (!_isPlaying) {
-                controller.forward();
-                assetsAudioPlayer.play();
-              } else {
-                controller.reverse();
-                assetsAudioPlayer.pause();
-              }
-            },
-            icon: AnimatedIcon(
-              icon: AnimatedIcons.play_pause,
-              progress: animation,
-            )),
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: IconButton(
+              onPressed: () async {
+                if (!_isPlaying) {
+                  controller.forward();
+                  assetsAudioPlayer.play();
+                } else {
+                  controller.reverse();
+                  assetsAudioPlayer.pause();
+                }
+              },
+              icon: AnimatedIcon(
+                icon: AnimatedIcons.play_pause,
+                progress: animation,
+                size: 40,
+              )),
+        ),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -81,6 +89,8 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer>
                   assetsAudioPlayer
                       .seek(Duration(milliseconds: position.round()));
                 },
+                activeColor: widget.primaryColor,
+                inactiveColor: widget.primaryColor?.withOpacity(0.5),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),

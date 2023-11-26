@@ -11,6 +11,7 @@ dependencies:
   assets_audio_player: ^3.0.6
   flutter:
     sdk: flutter
+  flutter_svg: ^2.0.9
   record: ^4.4.4
 
 dev_dependencies:
