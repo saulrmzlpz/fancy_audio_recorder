@@ -1,6 +1,6 @@
 name: fancy_audio_recorder
 description: Simple audio recorder ready to use (Like instant soup).
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/saulrmzlpz/fancy_audio_recorder
 
 environment:
