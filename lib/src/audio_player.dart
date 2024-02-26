@@ -6,17 +6,16 @@ import 'package:flutter/material.dart';
 
 class AudioSlidePlayer extends StatefulWidget {
   const AudioSlidePlayer({
-    Key? key,
+    super.key,
     required this.path,
-  }) : super(key: key);
+  });
   final String path;
 
   @override
   State<AudioSlidePlayer> createState() => _AudioSlidePlayerState();
 }
 
-class _AudioSlidePlayerState extends State<AudioSlidePlayer>
-    with SingleTickerProviderStateMixin {
+class _AudioSlidePlayerState extends State<AudioSlidePlayer> with SingleTickerProviderStateMixin {
   StreamSubscription? _readyToPlaySubscription;
   StreamSubscription? _positionSubscription;
   StreamSubscription? _playlistFinishedSubscription;
@@ -72,21 +71,16 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer>
             mainAxisSize: MainAxisSize.min,
             children: [
               Slider(
-                value: (_duration != null && _position.inMilliseconds > 0)
-                    ? _position.inMilliseconds / _duration!.inMilliseconds
-                    : 0.0,
+                value: (_duration != null && _position.inMilliseconds > 0) ? _position.inMilliseconds / _duration!.inMilliseconds : 0.0,
                 onChanged: (v) {
                   if (_duration == null) return;
                   final position = v * _duration!.inMilliseconds;
-                  assetsAudioPlayer
-                      .seek(Duration(milliseconds: position.round()));
+                  assetsAudioPlayer.seek(Duration(milliseconds: position.round()));
                 },
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text(_positionText), Text(_durationText)]),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_positionText), Text(_durationText)]),
               )
             ],
           ),
@@ -105,14 +99,12 @@ class _AudioSlidePlayerState extends State<AudioSlidePlayer>
       setState(() => _isPlaying = playing);
     });
 
-    _positionSubscription =
-        assetsAudioPlayer.currentPosition.listen((position) {
+    _positionSubscription = assetsAudioPlayer.currentPosition.listen((position) {
       setState(() => _position = position);
       log(position.toString());
     });
 
-    _playlistFinishedSubscription =
-        assetsAudioPlayer.playlistFinished.listen((finished) {
+    _playlistFinishedSubscription = assetsAudioPlayer.playlistFinished.listen((finished) {
       if (!finished) return;
       controller.reverse();
       setState(() => _position = Duration.zero);
