@@ -3,24 +3,43 @@ import 'dart:developer';
 import 'package:fancy_audio_recorder/fancy_audio_recorder.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String? test;
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Material App',
-      home: Scaffold(
+      title: 'Fancy Sample App',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Fancy Sample App'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  String? audioPath;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
         appBar: AppBar(
-          title: const Text('Fancy Sample App'),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
         ),
         body: Center(
           child: Column(
@@ -28,18 +47,16 @@ class _MyAppState extends State<MyApp> {
             children: [
               AudioRecorderButton(
                 maxRecordTime: const Duration(seconds: 80),
-                onRecordComplete: (value) {
-                  log('$value');
+                onRecordComplete: (audioPath) {
+                  log('$audioPath');
                   setState(() {
-                    test = value;
+                    this.audioPath = audioPath;
                   });
                 },
               ),
-              Text('$test'),
+              Text('$audioPath'),
             ],
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
