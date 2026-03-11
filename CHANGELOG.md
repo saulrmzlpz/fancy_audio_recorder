@@ -1,3 +1,11 @@
+## 0.1.1
+
+* Fixed: Memory leak — `AudioRecorder` stream subscriptions now properly disposed.
+* Fixed: Memory leak — amplitude monitoring only active during recording, not in `initState`.
+* Fixed: `TimerText.paddingLeft` now optional with default `0.0` for standalone usage.
+* Added comprehensive test coverage: 55 tests covering utils, widgets, and component behavior.
+* Updated `just_audio` to ^0.10.5 and `record` to ^6.0.0 for latest compatibility.
+
 ## 0.1.0
 
 * **Breaking:** Replaced `assets_audio_player` (abandoned) with `just_audio`.
