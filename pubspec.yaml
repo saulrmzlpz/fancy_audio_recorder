@@ -1,19 +1,19 @@
 name: fancy_audio_recorder
 description: Simple audio recorder ready to use (Like instant soup).
-version: 0.0.2
+version: 0.1.0
 homepage: https://github.com/saulrmzlpz/fancy_audio_recorder
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=1.17.0"
+  flutter: ">=3.3.0"
 
 dependencies:
-  assets_audio_player: ^3.0.6
   flutter:
     sdk: flutter
+  just_audio: ^0.9.40
   path: ^1.9.0
   path_provider: ^2.1.2
-  record: ^5.0.4
+  record: ^6.0.0
 
 dev_dependencies:
   flutter_lints: ^3.0.1
