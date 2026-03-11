@@ -4,7 +4,7 @@ Simple audio recorder widget ready to use (Like instant soup). Record, preview, 
 
 ## Demo
 
-![](https://github.com/saulrmzlpz/fancy_audio_recorder/blob/main/demo.gif)
+![Demo](https://raw.githubusercontent.com/saulrmzlpz/fancy_audio_recorder/main/demo.gif)
 
 ## Getting started
 
