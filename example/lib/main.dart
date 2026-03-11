@@ -46,7 +46,9 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AudioRecorderButton(
-                maxRecordTime: const Duration(seconds: 80),
+                // maxRecordTime omitted = infinite recording
+                maxRecordTime: const Duration(seconds: 10),
+                showMaxTime: false,
                 onRecordComplete: (audioPath) {
                   log('$audioPath');
                   setState(() {
