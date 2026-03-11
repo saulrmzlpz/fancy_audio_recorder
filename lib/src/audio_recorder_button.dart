@@ -53,16 +53,17 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
   FancyAudioRecorderState state = FancyAudioRecorderState.start;
   final animTime = const Duration(milliseconds: 200);
 
+  StreamSubscription? _amplitudeSub;
+  StreamSubscription? _stateSub;
+
   @override
   void initState() {
-    record.onAmplitudeChanged(sampleTime).listen((amp) {
-      if (mounted) setState(() => waveHeight = calculatedDB(amp.current));
+    _stateSub = record.onStateChanged().listen((recordState) {
+      if (recordState == RecordState.stop && mounted) {
+        _amplitudeSub?.cancel();
+        setState(() => waveHeight = 0);
+      }
     });
-
-    record.onStateChanged().listen((state) {
-      if (state == RecordState.stop && mounted) setState(() => waveHeight = 0);
-    });
-
     super.initState();
   }
 
@@ -148,6 +149,9 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
     record.start(const RecordConfig(),
         path: p.join(tempDir.path,
             'record-${DateTime.now().millisecondsSinceEpoch}.m4a'));
+    _amplitudeSub = record.onAmplitudeChanged(sampleTime).listen((amp) {
+      if (mounted) setState(() => waveHeight = calculatedDB(amp.current));
+    });
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) setState(() => elapsedTime = Duration(seconds: timer.tick));
       if (!widget.isInfinite &&
@@ -159,6 +163,7 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
 
   void _stopRecord() async {
     timer?.cancel();
+    _amplitudeSub?.cancel();
     path = Uri.tryParse(await record.stop() ?? '');
     elapsedTime = Duration.zero;
     if (path != null) {
@@ -179,6 +184,15 @@ class _AudioRecorderButtonState extends State<AudioRecorderButton> {
     widget.onRecordDelete?.call();
     widget.onRecordComplete?.call(null);
     setState(() => state = FancyAudioRecorderState.start);
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    _amplitudeSub?.cancel();
+    _stateSub?.cancel();
+    record.dispose();
+    super.dispose();
   }
 }
 
@@ -256,7 +270,7 @@ class TimerText extends StatelessWidget {
     super.key,
     required this.elapsedTime,
     required this.maxRecordTime,
-    required this.paddingLeft,
+    this.paddingLeft = 0.0,
     this.showMaxTime = true,
   });
 
