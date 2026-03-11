@@ -1,22 +1,23 @@
 import 'dart:math' as math;
 
 String formatDuration(Duration? duration) {
-  if (duration == null) return '';
+  if (duration == null) return '00:00';
 
-  String twoDigits(int n) {
-    if (n >= 10) return "$n";
-    return "0$n";
+  String twoDigits(int n) => n.toString().padLeft(2, '0');
+
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+
+  if (hours > 0) {
+    return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
   }
-
-  String hours = twoDigits(duration.inHours.remainder(24));
-  String minutes = twoDigits(duration.inMinutes.remainder(60));
-  String seconds = twoDigits(duration.inSeconds.remainder(60));
-
-  return "$hours:$minutes:$seconds";
+  return '${twoDigits(minutes)}:${twoDigits(seconds)}';
 }
 
 double calculatedDB(double amplitude) {
-  const double minDecibels = -120.0; // Or use -60dB, which I measured in a silent room.
+  const double minDecibels =
+      -120.0; // Or use -60dB, which I measured in a silent room.
 
   if (amplitude < minDecibels) {
     return 0;
